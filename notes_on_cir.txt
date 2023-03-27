@@ -1,0 +1,25 @@
+thrutest.dat - 	 max_peak_index = int(max_peak_index)
+			ValueError: not enough values to unpack (expected 2, got 0)
+			PAPR = 27.229
+
+2antenna.dat - 	 a, b = sp.signal.argrelmin(power_short[peak_before_max: peak_after_max: 1])[0]
+			TypeError: only size-1 arrays can be converted to Python scalars
+			PAPR = 20.895
+
+firsttest.dat - 	PAPR = 13.153
+			Ratio = 0.000333
+
+firsttest2.dat - 	PAPR = 15.939
+			Ratio = 0.015356
+
+cavity_test_control.dat - 	PAPR = 21.76
+					Ratio = 0.000398
+
+nw_open_test1.dat - 		PAPR = 22.938
+					2.94077 XXXXXXXXXXXXXXXXXXXXX
+
+
+nw_close_test -			PAPR = 19.753 (std = 1.25968)
+
+					0.0172799 (std = 0.010766)
+
