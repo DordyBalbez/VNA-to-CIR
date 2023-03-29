@@ -3,6 +3,7 @@ import math as m
 import numpy as np
 import pandas as pd
 import scipy as sp
+import decimal
 from scipy.signal import hilbert
 
 plt.style.use('dark_background')
@@ -39,6 +40,12 @@ def ift_manual(data, frequency, time):
     data = data @ np.exp(2j * np.pi * frequency.T @ time) * df
     return data
 
+def debug(file):
+    frequency, time = get_frequency_time(file)
+    data = get_data(file)
+    power = get_power(data, frequency, time)
+    xlim, time_short, power_short = get_xlim(time, power)
+    return frequency, time, power, time_short, power_short, xlim
 
 def get_power(data, frequency, time):
     y_ift = 2 * ift_manual(data, frequency, time)
@@ -65,23 +72,30 @@ def cir(file):
     plt.xlabel('Time (s)')
     plt.ylabel('Power of CIR')
     plt.text(0.75*xlim, 0.75*max(power), papr(power))
-    plt.text(0.75 * xlim, 0.6 * max(power), pp2p(power_short))
+    plt.text(0.75 * xlim, 0.6 * max(power), pp2p(power))
     plt.title(file)
 
 
-def pp2p(power_short):
-    peak_index, blah = sp.signal.find_peaks(power_short)
+def pp2p(power):
+    peak_index, _ = sp.signal.find_peaks(power)
     peaks = []
     for i in range(len(peak_index)):
-        peaks.append(power_short[peak_index[i]])
-    max_peak_index = np.asarray(power_short[peak_index] == max(power_short)).nonzero()[0]
-    max_peak_index = int(max_peak_index)
+        peaks.append(power[peak_index[i]])
+    # max_peak_index = np.where(power[peak_index] == max(power))
+    # max_peak_index = int(max_peak_index)
+    max_peak_index = np.argmax(power)
     peak_before_max = int(peak_index[max_peak_index - 1])
     peak_after_max = int(peak_index[max_peak_index + 1])
-    a, b = sp.signal.argrelmin(power_short[peak_before_max: peak_after_max: 1])[0]
-    numerator = np.trapz(power_short[peak_before_max + a: peak_after_max - b: 1])
-    denominator = np.trapz(power_short)
-    raysh = (numerator / denominator)
+    try:
+        a, b = sp.signal.argrelmin(power[peak_before_max: peak_after_max: 1])[0]
+        numerator = np.trapz(power[peak_before_max + a: peak_after_max - b: 1])
+        denominator = np.trapz(power)                                                     # maybe change to power?
+    except ValueError:
+        a = max_peak_index
+        b = int(sp.signal.argrelmin(power[a: peak_after_max: 1])[0])
+        numerator = 2 * np.trapz(power[a: peak_after_max - b: 1])
+        denominator = np.trapz(power)
+    raysh = '%.2e' % decimal.Decimal(numerator / denominator)
     string = "$Ratio=$" + str(raysh)
     return string
 
