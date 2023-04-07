@@ -8,12 +8,13 @@ from scipy.signal import hilbert
 
 plt.style.use('dark_background')
 
+
 def get_frequency_time(file):
     matrix = np.genfromtxt(file, dtype=float, delimiter=',', skip_header=3)
     frequency = matrix[:, 0]
     frequency = np.reshape(frequency, (len(frequency), 1))
     bandwidth = frequency[-1] - frequency[0]
-    time = np.linspace(0, len(frequency) / (2 * bandwidth), 20*len(frequency)).reshape(1, 20*len(frequency))
+    time = np.linspace(0, len(frequency) / (2 * bandwidth), 20 * len(frequency)).reshape(1, 20 * len(frequency))
     return frequency, time
 
 
@@ -23,7 +24,7 @@ def get_data(file):
     column_index = column_index[column_index > 0]
     if len(column_index) == 0:
         print("No S24 or S42 data in the data set.")
-        exit
+        exit()
     column_real, column_im = column_index
     data = np.genfromtxt(file, dtype=complex, delimiter=',', skip_header=3)
     data = data[:, column_real] + 1j * data[:, column_im]
@@ -40,12 +41,14 @@ def ift_manual(data, frequency, time):
     data = data @ np.exp(2j * np.pi * frequency.T @ time) * df
     return data
 
+
 def debug(file):
     frequency, time = get_frequency_time(file)
     data = get_data(file)
     power = get_power(data, frequency, time)
     xlim, time_short, power_short = get_xlim(time, power)
     return frequency, time, power, time_short, power_short, xlim
+
 
 def get_power(data, frequency, time):
     y_ift = 2 * ift_manual(data, frequency, time)
@@ -71,8 +74,8 @@ def cir(file):
     plt.xlim(0, xlim)
     plt.xlabel('Time (s)')
     plt.ylabel('Power of CIR')
-    plt.text(0.75*xlim, 0.75*max(power), papr(power))
-    plt.text(0.75 * xlim, 0.6 * max(power), pp2p(power))
+    plt.text(0.75 * xlim, 0.75 * max(power), papr(power))
+    # plt.text(0.75 * xlim, 0.6 * max(power), pp2p(power))for
     plt.title(file)
 
 
@@ -81,26 +84,36 @@ def pp2p(power):
     peaks = []
     for i in range(len(peak_index)):
         peaks.append(power[peak_index[i]])
-    # max_peak_index = np.where(power[peak_index] == max(power))
-    # max_peak_index = int(max_peak_index)
-    max_peak_index = np.argmax(power)
+    max_peak_index = np.where(power[peak_index] == max(power))[0]
+    max_peak_index = int(max_peak_index)
     peak_before_max = int(peak_index[max_peak_index - 1])
     peak_after_max = int(peak_index[max_peak_index + 1])
     try:
         a, b = sp.signal.argrelmin(power[peak_before_max: peak_after_max: 1])[0]
         numerator = np.trapz(power[peak_before_max + a: peak_after_max - b: 1])
-        denominator = np.trapz(power)                                                     # maybe change to power?
+        denominator = np.trapz(power)  # maybe change to power?
     except ValueError:
         a = max_peak_index
         b = int(sp.signal.argrelmin(power[a: peak_after_max: 1])[0])
         numerator = 2 * np.trapz(power[a: peak_after_max - b: 1])
         denominator = np.trapz(power)
     raysh = '%.2e' % decimal.Decimal(numerator / denominator)
-    string = "$Ratio=$" + str(raysh)
+    string = "$Mine=$" + str(raysh)
     return string
 
+
+def ppap(time_short, power):
+    delta = int(np.floor((55.5 / 20000) * len(time_short)))
+    max_peak_index = np.argmax(power)
+    numerator = 2 * np.trapz(power[max_peak_index: max_peak_index + delta: 1])
+    denominator = np.trapz(power)
+    raysh = '%.2e' % decimal.Decimal(numerator / denominator)
+    string = "$Imani=$" + str(raysh)
+    return string
+
+
 def papr(power):
-    papr = 10*m.log10(max(power) / sp.mean(power))
+    papr = 10 * m.log10(max(power) / sp.mean(power))
     paper = round(papr, 3)
     string = "$PAPR=$" + str(paper)
     return string
